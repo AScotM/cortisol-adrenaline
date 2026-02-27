@@ -369,8 +369,8 @@ class PlatoonOperations:
     def assess_platoon_status(self) -> Dict:
         total_adrenaline = sum(op.adrenaline.concentration for op in self.operators.values())
         total_cortisol = sum(op.cortisol.concentration for op in self.operators.values())
-        avg_adrenaline = total_adrenaline / len(self.operators)
-        avg_cortisol = total_cortisol / len(self.operators)
+        avg_adrenaline = total_adrenaline / len(self.operators) if self.operators else 0
+        avg_cortisol = total_cortisol / len(self.operators) if self.operators else 0
         
         combat_effective = 0
         for op in self.operators.values():
