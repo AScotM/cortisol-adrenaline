@@ -35,442 +35,444 @@ class SoldierStatus(Enum):
     TUNNEL_VISION = "tunnel_vision"
 
 @dataclass
-class TacticalVitals:
+class PhysiologicalMetrics:
     heart_rate_bpm: float
     respiratory_rate: float
     pupil_dilation: float
     tremor_intensity: float
-    auditory_exclusion: float
-    visual_tunnel: float
+    auditory_threshold: float
+    visual_field: float
     reaction_time_ms: float
     situational_awareness: float
 
 class Adrenaline:
-    def __init__(self, concentration: float = 1.0):
-        self.concentration = concentration
+    def __init__(self, baseline: float = 1.0):
+        self.concentration = baseline
+        self.baseline = baseline
         self.half_life_seconds = 120
-        self.surge_active = False
-        self.surge_start_time = 0
+        self.peak_response = False
+        self.peak_timestamp = 0
         
-    def metabolize(self, seconds_passed: float) -> None:
-        decay_factor = 0.5 ** (seconds_passed / self.half_life_seconds)
+    def metabolize(self, seconds_elapsed: float) -> None:
+        decay_factor = 0.5 ** (seconds_elapsed / self.half_life_seconds)
         self.concentration *= decay_factor
-        if self.concentration < 0.1:
-            self.surge_active = False
+        if self.concentration < self.baseline * 1.1:
+            self.peak_response = False
             
-    def trigger_combat_surge(self, threat_level: ThreatType) -> Dict:
-        base_multiplier = {
-            ThreatType.AMBUSH: 8.0,
-            ThreatType.SNIPER: 7.0,
-            ThreatType.IED: 9.0,
-            ThreatType.DIRECT_FIRE: 6.0,
-            ThreatType.INDIRECT_FIRE: 5.0,
-            ThreatType.PURSUIT: 4.0
+    def acute_stress_response(self, threat: ThreatType) -> Dict:
+        threat_multipliers = {
+            ThreatType.AMBUSH: 7.5,
+            ThreatType.SNIPER: 6.8,
+            ThreatType.IED: 8.2,
+            ThreatType.DIRECT_FIRE: 5.9,
+            ThreatType.INDIRECT_FIRE: 4.7,
+            ThreatType.PURSUIT: 3.9
         }
         
-        self.concentration *= base_multiplier.get(threat_level, 3.0)
-        self.surge_active = True
-        self.surge_start_time = time.time()
+        self.concentration *= threat_multipliers.get(threat, 3.0)
+        self.peak_response = True
+        self.peak_timestamp = time.time()
         
-        vitals = TacticalVitals(
-            heart_rate_bpm=120 + self.concentration * 10,
-            respiratory_rate=25 + self.concentration * 3,
-            pupil_dilation=min(1.0, 0.3 + self.concentration * 0.1),
-            tremor_intensity=self.concentration * 0.15,
-            auditory_exclusion=min(0.9, 0.2 + self.concentration * 0.1),
-            visual_tunnel=min(0.8, 0.1 + self.concentration * 0.12),
-            reaction_time_ms=max(150, 300 - self.concentration * 20),
-            situational_awareness=max(0.2, 1.0 - self.concentration * 0.15)
+        metrics = PhysiologicalMetrics(
+            heart_rate_bpm=110 + self.concentration * 8,
+            respiratory_rate=22 + self.concentration * 2.5,
+            pupil_dilation=min(0.95, 0.3 + self.concentration * 0.08),
+            tremor_intensity=self.concentration * 0.12,
+            auditory_threshold=min(0.85, 0.2 + self.concentration * 0.09),
+            visual_field=min(0.75, 0.15 + self.concentration * 0.1),
+            reaction_time_ms=max(160, 320 - self.concentration * 18),
+            situational_awareness=max(0.25, 0.95 - self.concentration * 0.12)
         )
         
-        effects = {
-            "strength_boost": 1.0 + self.concentration * 0.2,
-            "pain_suppression": min(0.9, 0.3 + self.concentration * 0.1),
-            "auditory_exclusion": vitals.auditory_exclusion > 0.5,
-            "tunnel_vision": vitals.visual_tunnel > 0.4,
-            "reaction_time_advantage": vitals.reaction_time_ms < 200,
-            "vitals": vitals,
-            "message": f"Combat surge activated: {threat_level.value}"
+        return {
+            "concentration": round(self.concentration, 1),
+            "sympathetic_activation": min(1.0, 0.4 + self.concentration * 0.1),
+            "pain_threshold": min(0.95, 0.4 + self.concentration * 0.08),
+            "auditory_gating": metrics.auditory_threshold > 0.45,
+            "peripheral_vision_loss": metrics.visual_field < 0.35,
+            "reaction_time_improvement": metrics.reaction_time_ms < 210,
+            "metrics": metrics
         }
-        
-        return effects
     
-    def assess_combat_effectiveness(self) -> float:
-        if not self.surge_active:
+    def performance_modifier(self) -> float:
+        if not self.peak_response:
             return 1.0
-        time_in_surge = time.time() - self.surge_start_time
-        if time_in_surge > 180:
-            return max(0.3, 1.0 - (time_in_surge - 180) * 0.01)
-        return 1.0 + self.concentration * 0.1
+        duration = time.time() - self.peak_timestamp
+        if duration > 180:
+            return max(0.4, 1.0 - (duration - 180) * 0.008)
+        return 1.0 + self.concentration * 0.08
 
 class Cortisol:
-    def __init__(self, concentration: float = 10.0):
-        self.concentration = concentration
-        self.baseline = 10.0
+    def __init__(self, baseline: float = 12.0):
+        self.concentration = baseline
+        self.baseline = baseline
         self.half_life_hours = 1.5
-        self.combat_days = 0
-        self.sleep_debt = 0.0
-        self.chronic_elevation = False
+        self.deployment_days = 0
+        self.recovery_deficit = 0.0
+        self.chronic_adaptation = False
         
-    def metabolize(self, hours_passed: float) -> None:
-        decay_factor = 0.5 ** (hours_passed / self.half_life_hours)
-        self.concentration *= decay_factor
+    def metabolize(self, hours_elapsed: float) -> None:
+        decay = 0.5 ** (hours_elapsed / self.half_life_hours)
+        self.concentration *= decay
         if self.concentration < self.baseline:
             self.concentration = self.baseline
             
-    def combat_stress_accumulation(self, mission_duration_hours: float, mission_type: MissionType) -> None:
-        stress_factors = {
-            MissionType.RECON: 1.2,
-            MissionType.DIRECT_ACTION: 1.8,
-            MissionType.AMBUSH: 2.0,
-            MissionType.WITHDRAWAL: 1.6,
-            MissionType.HOLDING: 1.4
+    def stress_accumulation(self, duration_hours: float, mission: MissionType) -> None:
+        mission_factors = {
+            MissionType.RECON: 1.15,
+            MissionType.DIRECT_ACTION: 1.65,
+            MissionType.AMBUSH: 1.9,
+            MissionType.WITHDRAWAL: 1.55,
+            MissionType.HOLDING: 1.35
         }
         
-        stress_multiplier = stress_factors.get(mission_type, 1.0)
-        self.concentration += mission_duration_hours * stress_multiplier * 2
-        self.combat_days += mission_duration_hours / 24
+        factor = mission_factors.get(mission, 1.2)
+        self.concentration += duration_hours * factor * 1.8
+        self.deployment_days += duration_hours / 24
         
-        if self.combat_days > 7:
-            self.baseline *= 1.2
-            self.chronic_elevation = True
+        if self.deployment_days > 7:
+            self.baseline *= 1.15
+            self.chronic_adaptation = True
             
-    def assess_operational_effects(self) -> Dict:
-        effects = {
-            "memory_recall": max(0.4, 1.0 - (self.concentration - self.baseline) * 0.03),
-            "decision_speed": max(0.5, 1.0 - (self.concentration - self.baseline) * 0.02),
-            "immune_function": max(0.3, 1.0 - (self.concentration - self.baseline) * 0.04),
-            "wound_healing": max(0.2, 1.0 - (self.concentration - self.baseline) * 0.05),
-            "muscle_recovery": max(0.3, 1.0 - (self.concentration - self.baseline) * 0.03)
+    def cognitive_assessment(self) -> Dict:
+        elevation = self.concentration - self.baseline
+        metrics = {
+            "working_memory": max(0.45, 1.0 - elevation * 0.025),
+            "processing_speed": max(0.55, 1.0 - elevation * 0.018),
+            "immune_competence": max(0.35, 1.0 - elevation * 0.035),
+            "tissue_repair": max(0.25, 1.0 - elevation * 0.04),
+            "muscle_recovery_rate": max(0.4, 1.0 - elevation * 0.025)
         }
         
-        if self.chronic_elevation:
-            effects.update({
-                "hypervigilance": True,
-                "irritability": self.concentration > self.baseline * 1.5,
-                "sleep_disruption": True,
-                "weight_loss": self.combat_days > 14,
-                "ptsd_risk": self.combat_days > 30
+        if self.chronic_adaptation:
+            metrics.update({
+                "baseline_elevation": self.baseline > 15,
+                "irritability_index": min(1.0, 0.3 + elevation * 0.02),
+                "sleep_quality": max(0.2, 1.0 - self.recovery_deficit * 0.1),
+                "metabolic_cost": self.deployment_days > 21,
+                "long_term_risk": self.deployment_days > 45
             })
             
-        return effects
+        return metrics
     
-    def circadian_combat_cycle(self, hour: int, watch_duty: bool) -> None:
-        if watch_duty:
-            self.concentration *= 1.3
-            self.sleep_debt += 0.5
+    def circadian_modulation(self, hour: int, active_duty: bool) -> None:
+        if active_duty:
+            self.concentration *= 1.25
+            self.recovery_deficit += 0.4
         else:
-            if 4 <= hour <= 8:
-                self.concentration *= 1.4
-            elif 22 <= hour or hour <= 3:
-                self.concentration *= 1.2 if self.chronic_elevation else 0.8
+            if 5 <= hour <= 9:
+                self.concentration *= 1.35
+            elif 23 <= hour or hour <= 4:
+                self.concentration *= 1.15 if self.chronic_adaptation else 0.75
 
-class CombatStressResponse:
-    def __init__(self, operator_name: str, unit: str):
-        self.operator = operator_name
-        self.unit = unit
+class OperatorPhysiology:
+    def __init__(self, identifier: str, element: str):
+        self.identifier = identifier
+        self.element = element
         self.adrenaline = Adrenaline()
         self.cortisol = Cortisol()
-        self.alert_level = AlertLevel.STANDARD
+        self.posture = AlertLevel.STANDARD
         self.current_mission: Optional[MissionType] = None
-        self.status = SoldierStatus.NORMAL
-        self.mission_log: List[Dict] = []
-        self.threat_history: List[ThreatType] = []
-        self.team_comms = []
-        self.casualties_taken = 0
-        self.rounds_fired = 0
+        self.state = SoldierStatus.NORMAL
+        self.event_log: List[Dict] = []
+        self.threat_encounters: List[ThreatType] = []
+        self.communication_channels = []
+        self.element_casualties = 0
+        self.ammunition_expended = 0
         
-    def mission_brief(self, mission: MissionType, duration_hours: float) -> Dict:
+    def operational_briefing(self, mission: MissionType, duration: float) -> Dict:
         self.current_mission = mission
-        self.alert_level = AlertLevel.HEIGHTENED
-        self.adrenaline.concentration *= 1.5
-        self.cortisol.concentration *= 1.2
+        self.posture = AlertLevel.HEIGHTENED
+        self.adrenaline.concentration *= 1.4
+        self.cortisol.concentration *= 1.15
         
         return {
-            "operator": self.operator,
-            "unit": self.unit,
-            "mission": mission.value,
-            "duration": duration_hours,
-            "initial_adrenaline": self.adrenaline.concentration,
-            "initial_cortisol": self.cortisol.concentration,
-            "alert_status": self.alert_level.value,
-            "briefing_complete": True
+            "operator": self.identifier,
+            "element": self.element,
+            "mission_type": mission.value,
+            "projected_duration": duration,
+            "adrenaline_baseline": round(self.adrenaline.concentration, 1),
+            "cortisol_baseline": round(self.cortisol.concentration, 1),
+            "readiness_state": self.posture.value
         }
     
-    def contact_engaged(self, threat: ThreatType, intensity: float) -> Dict:
-        self.alert_level = AlertLevel.CRITICAL
-        self.threat_history.append(threat)
-        self.rounds_fired += random.randint(30, 300)
+    def threat_engagement(self, threat: ThreatType, severity: float) -> Dict:
+        self.posture = AlertLevel.COMBAT
+        self.threat_encounters.append(threat)
+        self.ammunition_expended += random.randint(45, 450)
         
-        surge_effects = self.adrenaline.trigger_combat_surge(threat)
+        response = self.adrenaline.acute_stress_response(threat)
         
-        self.cortisol.combat_stress_accumulation(0.5, self.current_mission or MissionType.DIRECT_ACTION)
+        self.cortisol.stress_accumulation(0.5, self.current_mission or MissionType.DIRECT_ACTION)
         
         if threat == ThreatType.AMBUSH:
-            self.status = SoldierStatus.PANICKED if random.random() < 0.3 else SoldierStatus.FOCUSED
+            self.state = SoldierStatus.PANICKED if random.random() < 0.25 else SoldierStatus.FOCUSED
         elif threat == ThreatType.SNIPER:
-            self.status = SoldierStatus.FOCUSED
+            self.state = SoldierStatus.FOCUSED
         elif threat == ThreatType.IED:
-            self.status = SoldierStatus.TUNNEL_VISION
+            self.state = SoldierStatus.TUNNEL_VISION
             
-        contact_report = {
+        engagement_record = {
             "timestamp": time.time(),
-            "threat": threat.value,
-            "intensity": intensity,
-            "adrenaline_spike": self.adrenaline.concentration,
-            "cortisol_level": self.cortisol.concentration,
-            "physiological_state": surge_effects,
-            "operator_status": self.status.value,
-            "rounds_expended": self.rounds_fired,
-            "situational_awareness": surge_effects["vitals"].situational_awareness
+            "threat_classification": threat.value,
+            "severity_index": severity,
+            "adrenaline_response": response["concentration"],
+            "cortisol_concentration": round(self.cortisol.concentration, 1),
+            "physiological_response": response,
+            "operator_state": self.state.value,
+            "rounds_expended": self.ammunition_expended,
+            "awareness_index": response["metrics"].situational_awareness
         }
         
-        self.mission_log.append(contact_report)
-        return contact_report
+        self.event_log.append(engagement_record)
+        return engagement_record
     
-    def buddy_wounded(self, severity: float) -> Dict:
-        self.casualties_taken += 1
-        self.adrenaline.concentration *= 2.5
-        self.cortisol.concentration *= 1.8
+    def element_casualty(self, severity: float) -> Dict:
+        self.element_casualties += 1
+        self.adrenaline.concentration *= 2.3
+        self.cortisol.concentration *= 1.7
         
-        if self.casualties_taken > 2:
-            self.status = SoldierStatus.PANICKED
+        if self.element_casualties > 2:
+            self.state = SoldierStatus.PANICKED
         else:
-            self.status = SoldierStatus.FOCUSED
+            self.state = SoldierStatus.FOCUSED
             
-        vitals = TacticalVitals(
-            heart_rate_bpm=140 + random.randint(10, 30),
-            respiratory_rate=30 + random.randint(5, 15),
-            pupil_dilation=0.8,
-            tremor_intensity=0.3,
-            auditory_exclusion=0.7,
-            visual_tunnel=0.6,
-            reaction_time_ms=180,
-            situational_awareness=0.5
+        vitals = PhysiologicalMetrics(
+            heart_rate_bpm=135 + random.randint(5, 25),
+            respiratory_rate=28 + random.randint(3, 12),
+            pupil_dilation=0.75,
+            tremor_intensity=0.28,
+            auditory_threshold=0.65,
+            visual_field=0.55,
+            reaction_time_ms=175,
+            situational_awareness=0.48
         )
         
         return {
-            "event": "buddy_wounded",
-            "casualties": self.casualties_taken,
-            "adrenaline": self.adrenaline.concentration,
-            "cortisol": self.cortisol.concentration,
-            "status": self.status.value,
-            "combat_effectiveness": self.adrenaline.assess_combat_effectiveness(),
-            "vitals": vitals,
-            "action": "return_fire" if self.status != SoldierStatus.PANICKED else "freeze"
+            "event": "element_casualty",
+            "cumulative_casualties": self.element_casualties,
+            "adrenaline_spike": round(self.adrenaline.concentration, 1),
+            "cortisol_level": round(self.cortisol.concentration, 1),
+            "psychological_state": self.state.value,
+            "combat_effectiveness": self.adrenaline.performance_modifier(),
+            "physiological_state": vitals,
+            "immediate_response": "suppressive_fire" if self.state != SoldierStatus.PANICKED else "cover"
         }
     
-    def tactical_withdrawal(self, pursuit_active: bool) -> Dict:
-        self.alert_level = AlertLevel.CRITICAL
+    def tactical_retrograde(self, pursued: bool) -> Dict:
+        self.posture = AlertLevel.CRITICAL
         self.current_mission = MissionType.WITHDRAWAL
         
-        if pursuit_active:
-            self.adrenaline.concentration *= 2.0
-            self.cortisol.concentration *= 1.3
+        if pursued:
+            self.adrenaline.concentration *= 1.9
+            self.cortisol.concentration *= 1.25
             
-        effectiveness = self.adrenaline.assess_combat_effectiveness()
+        effectiveness = self.adrenaline.performance_modifier()
         
-        withdrawal_assessment = {
-            "maneuver": "tactical_withdrawal",
-            "pursuit_active": pursuit_active,
-            "adrenaline_level": self.adrenaline.concentration,
-            "cortisol_level": self.cortisol.concentration,
-            "movement_speed": 1.0 + self.adrenaline.concentration * 0.15,
-            "accuracy_penalty": self.adrenaline.concentration * 0.1 if pursuit_active else 0,
-            "cover_seeking": self.cortisol.concentration > 20,
-            "comms_discipline": self.cortisol.concentration < 25,
-            "effectiveness": effectiveness
+        assessment = {
+            "maneuver": "tactical_retrograde",
+            "pursuit_ongoing": pursued,
+            "adrenaline_state": round(self.adrenaline.concentration, 1),
+            "cortisol_state": round(self.cortisol.concentration, 1),
+            "movement_efficiency": 1.0 + self.adrenaline.concentration * 0.12,
+            "accuracy_degradation": self.adrenaline.concentration * 0.08 if pursued else 0.03,
+            "cover_utilization": self.cortisol.concentration > 18,
+            "communication_discipline": self.cortisol.concentration < 22,
+            "effectiveness_coefficient": effectiveness
         }
         
-        self.mission_log.append(withdrawal_assessment)
-        return withdrawal_assessment
+        self.event_log.append(assessment)
+        return assessment
     
-    def extract_and_recovery(self, recovery_hours: float) -> Dict:
-        self.alert_level = AlertLevel.STANDARD
+    def extraction_debrief(self, recovery_period: float) -> Dict:
+        self.posture = AlertLevel.STANDARD
         self.current_mission = None
         
-        self.adrenaline.metabolize(recovery_hours * 3600)
-        self.cortisol.metabolize(recovery_hours)
+        self.adrenaline.metabolize(recovery_period * 3600)
+        self.cortisol.metabolize(recovery_period)
         
-        cortisol_effects = self.cortisol.assess_operational_effects()
+        cognitive_state = self.cortisol.cognitive_assessment()
         
-        if self.cortisol.chronic_elevation:
-            debrief = {
-                "operator": self.operator,
-                "total_combat_days": self.cortisol.combat_days,
-                "contacts": len(self.threat_history),
-                "casualties_witnessed": self.casualties_taken,
-                "chronic_stress": True,
-                "cognitive_decline": cortisol_effects["memory_recall"],
-                "immune_status": cortisol_effects["immune_function"],
-                "rotation_recommended": self.cortisol.combat_days > 45,
-                "ptsd_screening": self.cortisol.combat_days > 60,
-                "debrief_complete": True
+        if self.cortisol.chronic_adaptation:
+            report = {
+                "operator": self.identifier,
+                "deployment_duration_days": round(self.cortisol.deployment_days, 1),
+                "threat_encounters": len(self.threat_encounters),
+                "element_losses": self.element_casualties,
+                "chronic_stress_indicators": True,
+                "cognitive_decline": round(cognitive_state["working_memory"], 2),
+                "immune_status": round(cognitive_state["immune_competence"], 2),
+                "rotation_required": self.cortisol.deployment_days > 40,
+                "psychological_evaluation_recommended": self.cortisol.deployment_days > 55
             }
         else:
-            debrief = {
-                "operator": self.operator,
-                "mission_success": True,
-                "final_adrenaline": self.adrenaline.concentration,
-                "final_cortisol": self.cortisol.concentration,
-                "recovery_needed": recovery_hours,
-                "ready_for_next": self.cortisol.concentration < 15
+            report = {
+                "operator": self.identifier,
+                "mission_completion": True,
+                "final_adrenaline": round(self.adrenaline.concentration, 1),
+                "final_cortisol": round(self.cortisol.concentration, 1),
+                "recovery_allocated": recovery_period,
+                "operational_readiness": self.cortisol.concentration < 14
             }
             
-        return debrief
+        return report
     
-    def team_cohesion_check(self, team_members: List[str]) -> Dict:
-        avg_cortisol = self.cortisol.concentration
-        cohesion_factor = 1.0 - (avg_cortisol - self.cortisol.baseline) * 0.02
+    def unit_cohesion_analysis(self, team_roster: List[str]) -> Dict:
+        mean_cortisol = self.cortisol.concentration
+        cohesion_index = 1.0 - (mean_cortisol - self.cortisol.baseline) * 0.018
         
-        comms_quality = "degraded" if cohesion_factor < 0.7 else "effective"
-        if self.cortisol.chronic_elevation:
-            comms_quality = "compromised"
+        comms_effectiveness = "reduced" if cohesion_index < 0.72 else "nominal"
+        if self.cortisol.chronic_adaptation:
+            comms_effectiveness = "degraded"
             
         return {
-            "team": team_members,
-            "avg_cortisol": avg_cortisol,
-            "cohesion_factor": max(0.3, cohesion_factor),
-            "comms_quality": comms_quality,
-            "fratricide_risk": "elevated" if avg_cortisol > 30 else "normal",
-            "buddy_trust": max(0.4, 1.0 - (self.cortisol.combat_days * 0.01))
+            "unit_composition": team_roster,
+            "mean_cortisol": round(mean_cortisol, 1),
+            "cohesion_index": max(0.35, round(cohesion_index, 2)),
+            "communication_efficacy": comms_effectiveness,
+            "blue_on_blue_risk": "elevated" if mean_cortisol > 28 else "baseline",
+            "mutual_support_index": max(0.45, 1.0 - (self.cortisol.deployment_days * 0.008))
         }
 
-class PlatoonOperations:
-    def __init__(self, platoon_id: str):
-        self.platoon_id = platoon_id
-        self.operators: Dict[str, CombatStressResponse] = {}
-        self.current_threat_level = AlertLevel.STANDARD
-        self.area_of_operations = "hostile"
-        self.mission_days = 0
+class BattalionTaskForce:
+    def __init__(self, task_force_designation: str):
+        self.task_force_designation = task_force_designation
+        self.personnel: Dict[str, OperatorPhysiology] = {}
+        self.current_operational_tempo = AlertLevel.STANDARD
+        self.area_classification = "contested"
+        self.cumulative_deployment_days = 0
         
-    def add_operator(self, name: str, unit: str) -> None:
-        self.operators[name] = CombatStressResponse(name, unit)
+    def attach_operator(self, identifier: str, element: str) -> None:
+        self.personnel[identifier] = OperatorPhysiology(identifier, element)
         
-    def squad_ambushed(self, location: str, intensity: float) -> Dict:
-        self.current_threat_level = AlertLevel.CRITICAL
+    def element_contact(self, grid_reference: str, threat_intensity: float) -> Dict:
+        self.current_operational_tempo = AlertLevel.COMBAT
         
-        squad_response = {}
-        for name, operator in self.operators.items():
-            response = operator.contact_engaged(ThreatType.AMBUSH, intensity)
-            squad_response[name] = response
+        element_responses = {}
+        for identifier, operator in self.personnel.items():
+            response = operator.threat_engagement(ThreatType.AMBUSH, threat_intensity)
+            element_responses[identifier] = {
+                "state": response["operator_state"],
+                "adrenaline": response["adrenaline_response"],
+                "awareness": response["awareness_index"]
+            }
             
-        team_status = self.assess_platoon_status()
+        unit_status = self.assess_unit_readiness()
         
         return {
-            "location": location,
-            "intensity": intensity,
-            "squad_responses": squad_response,
-            "platoon_cohesion": team_status["cohesion"],
-            "casualties": sum(1 for op in self.operators.values() if op.casualties_taken > 0),
-            "effective_fighters": team_status["combat_effective"]
+            "contact_location": grid_reference,
+            "threat_magnitude": threat_intensity,
+            "element_responses": element_responses,
+            "unit_cohesion_index": unit_status["cohesion_index"],
+            "personnel_casualties": sum(1 for op in self.personnel.values() if op.element_casualties > 0),
+            "combat_effective_personnel": unit_status["effective_personnel"]
         }
     
-    def assess_platoon_status(self) -> Dict:
-        total_adrenaline = sum(op.adrenaline.concentration for op in self.operators.values())
-        total_cortisol = sum(op.cortisol.concentration for op in self.operators.values())
-        avg_adrenaline = total_adrenaline / len(self.operators) if self.operators else 0
-        avg_cortisol = total_cortisol / len(self.operators) if self.operators else 0
+    def assess_unit_readiness(self) -> Dict:
+        total_adrenaline = sum(op.adrenaline.concentration for op in self.personnel.values())
+        total_cortisol = sum(op.cortisol.concentration for op in self.personnel.values())
+        mean_adrenaline = total_adrenaline / len(self.personnel) if self.personnel else 0
+        mean_cortisol = total_cortisol / len(self.personnel) if self.personnel else 0
         
-        combat_effective = 0
-        for op in self.operators.values():
-            if op.status != SoldierStatus.PANICKED and op.adrenaline.assess_combat_effectiveness() > 0.6:
-                combat_effective += 1
+        effective_personnel = 0
+        for op in self.personnel.values():
+            if op.state != SoldierStatus.PANICKED and op.adrenaline.performance_modifier() > 0.58:
+                effective_personnel += 1
                 
-        cohesion = 1.0 - (avg_cortisol - 10) * 0.02 if avg_cortisol > 10 else 1.0
+        cohesion_index = 1.0 - (mean_cortisol - 10) * 0.018 if mean_cortisol > 10 else 1.0
         
         return {
-            "platoon": self.platoon_id,
-            "total_operators": len(self.operators),
-            "avg_adrenaline": avg_adrenaline,
-            "avg_cortisol": avg_cortisol,
-            "combat_effective": combat_effective,
-            "cohesion": max(0.2, cohesion),
-            "alert_level": self.current_threat_level.value,
-            "days_deployed": self.mission_days,
-            "rotation_priority": "high" if avg_cortisol > 25 else "normal"
+            "task_force": self.task_force_designation,
+            "assigned_personnel": len(self.personnel),
+            "mean_adrenaline": round(mean_adrenaline, 1),
+            "mean_cortisol": round(mean_cortisol, 1),
+            "effective_personnel": effective_personnel,
+            "cohesion_index": max(0.25, round(cohesion_index, 2)),
+            "operational_tempo": self.current_operational_tempo.value,
+            "deployment_duration": round(self.cumulative_deployment_days, 1),
+            "relief_priority": "urgent" if mean_cortisol > 24 else "routine"
         }
     
-    def night_ops_cycle(self, hour: int) -> None:
-        for operator in self.operators.values():
-            on_watch = random.random() < 0.33
-            operator.cortisol.circadian_combat_cycle(hour, on_watch)
+    def night_operations_cycle(self, hour: int) -> None:
+        for operator in self.personnel.values():
+            watch_duty = random.random() < 0.3
+            operator.cortisol.circadian_modulation(hour, watch_duty)
             
-    def prolonged_combat_simulation(self, days: int) -> List[Dict]:
-        daily_reports = []
+    def extended_deployment_simulation(self, days: int) -> List[Dict]:
+        daily_assessments = []
         for day in range(days):
-            self.mission_days += 1
+            self.cumulative_deployment_days += 1
             
             for hour in range(24):
                 if hour % 4 == 0:
-                    for operator in self.operators.values():
+                    for operator in self.personnel.values():
                         operator.cortisol.metabolize(4)
                         
-                if 6 <= hour <= 18 and random.random() < 0.2:
+                if 6 <= hour <= 19 and random.random() < 0.15:
                     threat = random.choice(list(ThreatType))
-                    intensity = random.uniform(0.3, 1.0)
-                    for operator in self.operators.values():
-                        operator.contact_engaged(threat, intensity)
+                    severity = random.uniform(0.25, 0.95)
+                    for operator in self.personnel.values():
+                        operator.threat_engagement(threat, severity)
                         
-            daily_report = self.assess_platoon_status()
-            daily_reports.append(daily_report)
+            daily_assessment = self.assess_unit_readiness()
+            daily_assessments.append(daily_assessment)
             
-        return daily_reports
+        return daily_assessments
     
-    def extract_platoon(self, extraction_point: str) -> Dict:
-        total_recovery_hours = 72
+    def unit_extraction(self, extraction_zone: str) -> Dict:
+        recovery_allocation = 72
         final_status = {}
         
-        for name, operator in self.operators.items():
-            recovery = operator.extract_and_recovery(total_recovery_hours)
-            final_status[name] = recovery
+        for identifier, operator in self.personnel.items():
+            debrief = operator.extraction_debrief(recovery_allocation)
+            final_status[identifier] = debrief
             
-        platoon_assessment = self.assess_platoon_status()
+        unit_assessment = self.assess_unit_readiness()
         
         return {
-            "extraction_point": extraction_point,
-            "operators": final_status,
-            "platoon_assessment": platoon_assessment,
-            "recommendation": "immediate_rotation" if platoon_assessment["avg_cortisol"] > 30 else "standby",
-            "operation_complete": True
+            "extraction_zone": extraction_zone,
+            "personnel_status": final_status,
+            "unit_readiness": unit_assessment,
+            "command_recommendation": "immediate_relief" if unit_assessment["mean_cortisol"] > 28 else "operational_standby",
+            "mission_termination": True
         }
 
 if __name__ == "__main__":
-    task_force_raider = PlatoonOperations("TF Raider")
+    battletask_force_raider = BattalionTaskForce("TF Raider")
     
-    task_force_raider.add_operator("Maverick", "Alpha")
-    task_force_raider.add_operator("Ghost", "Alpha")
-    task_force_raider.add_operator("Reaper", "Bravo")
-    task_force_raider.add_operator("Havoc", "Bravo")
+    battletask_force_raider.attach_operator("Maverick", "Alpha")
+    battletask_force_raider.attach_operator("Ghost", "Alpha")
+    battletask_force_raider.attach_operator("Reaper", "Bravo")
+    battletask_force_raider.attach_operator("Havoc", "Bravo")
     
-    print("=== OPERATION URBAN RESOLVE ===")
-    print(task_force_raider.operators["Maverick"].mission_brief(MissionType.DIRECT_ACTION, 24))
+    print("=== MISSION BRIEF: OPERATION URBAN RESOLVE ===")
+    print(battletask_force_raider.personnel["Maverick"].operational_briefing(MissionType.DIRECT_ACTION, 24))
     
-    print("\n=== CONTACT AMBUSH ===")
-    ambush_response = task_force_raider.squad_ambushed("Sector 7-4", 0.9)
-    print(f"Ambushed at {ambush_response['location']}")
-    print(f"Combat effective: {ambush_response['effective_fighters']}")
+    print("\n=== CONTACT REPORT: ELEMENT AMBUSHED ===")
+    contact = battletask_force_raider.element_contact("Sector 7-4", 0.9)
+    print(f"Contact Location: {contact['contact_location']}")
+    print(f"Combat Effective Personnel: {contact['combat_effective_personnel']}")
     
-    print("\n=== CASUALTY EVENT ===")
-    print(task_force_raider.operators["Ghost"].buddy_wounded(0.7))
+    print("\n=== CASUALTY REPORT: ELEMENT LOSS ===")
+    print(battletask_force_raider.personnel["Ghost"].element_casualty(0.7))
     
-    print("\n=== TACTICAL WITHDRAWAL ===")
-    print(task_force_raider.operators["Reaper"].tactical_withdrawal(True))
+    print("\n=== TACTICAL MOVEMENT: RETROGRADE ===")
+    print(battletask_force_raider.personnel["Reaper"].tactical_retrograde(True))
     
-    print("\n=== 30 DAY DEPLOYMENT SIMULATION ===")
-    deployment_report = task_force_raider.prolonged_combat_simulation(30)
-    print(f"Final day cohesion: {deployment_report[-1]['cohesion']:.2f}")
-    print(f"Avg cortisol final day: {deployment_report[-1]['avg_cortisol']:.1f}")
+    print("\n=== 30-DAY DEPLOYMENT ANALYSIS ===")
+    deployment = battletask_force_raider.extended_deployment_simulation(30)
+    print(f"Final Day Cohesion Index: {deployment[-1]['cohesion_index']}")
+    print(f"Final Day Mean Cortisol: {deployment[-1]['mean_cortisol']}")
     
-    print("\n=== PLATOON STATUS POST-DEPLOYMENT ===")
-    status = task_force_raider.assess_platoon_status()
-    print(f"Combat effective: {status['combat_effective']}/{status['total_operators']}")
-    print(f"Rotation priority: {status['rotation_priority']}")
+    print("\n=== UNIT READINESS ASSESSMENT ===")
+    status = battletask_force_raider.assess_unit_readiness()
+    print(f"Effective Personnel: {status['effective_personnel']}/{status['assigned_personnel']}")
+    print(f"Relief Priority: {status['relief_priority']}")
     
-    print("\n=== TEAM COHESION CHECK ===")
-    print(task_force_raider.operators["Maverick"].team_cohesion_check(["Ghost", "Reaper", "Havoc"]))
+    print("\n=== COHESION ANALYSIS: ALPHA-BRAVO INTEGRATION ===")
+    print(battletask_force_raider.personnel["Maverick"].unit_cohesion_analysis(["Ghost", "Reaper", "Havoc"]))
     
-    print("\n=== EXTRACTION AND DEBRIEF ===")
-    extraction = task_force_raider.extract_platoon("LZ Phoenix")
-    print(f"Recommendation: {extraction['recommendation']}")
-    print(f"Mission days: {extraction['platoon_assessment']['days_deployed']}")
+    print("\n=== EXTRACTION & DEBRIEFING SUMMARY ===")
+    extraction = battletask_force_raider.unit_extraction("LZ Phoenix")
+    print(f"Command Recommendation: {extraction['command_recommendation']}")
+    print(f"Total Deployment Days: {extraction['unit_readiness']['deployment_duration']}")
